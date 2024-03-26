@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whepto - Items</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <h1>Items</h1>
+    <div class="grid-container">
+        {% for item in items %}
+            <div class="grid-item">
+                <h2>{{ item.description }}</h2>
+                <p>Stock: {{ item.stock }}</p>
+                <p>Price: ${{ item.price|round(2) }}</p>
+                <label for="quantity{{ item.id }}">Quantity:</label>
+                <input type="number" id="quantity{{ item.id }}" name="quantity{{ item.id }}" value="1" min="1">
+                <button class="add-to-cart-btn" data-item-id="{{ item.id }}">Add to Cart</button>
+            </div>
+        {% endfor %}
+    </div>
+    <script>
+        document.querySelectorAll('.add-to-cart-btn').forEach(button => {
+            button.addEventListener('click', addToCart);
+        });
+
+        function addToCart(event) {
+            const itemId = event.target.dataset.itemId;
+            const quantityInput = document.querySelector(`#quantity${itemId}`);
+            const quantity = parseInt(quantityInput.value);
+            // Here you can send an AJAX request to your Flask backend to add the item to the cart
+            // Example:
+            fetch(`localhost:4000/cart/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: {
+                    item: itemId,
+                    quantity: quantity
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('Item added to cart successfully!');
+                } else {
+                    alert('Failed to add item to cart. Please try again.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while adding item to cart. Please try again later.');
+            });
+        }
+    </script>
+</body>
+</html>

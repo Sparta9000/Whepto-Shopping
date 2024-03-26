@@ -1,0 +1,97 @@
+.logo {
+  font-family: 'Roboto', sans-serif; 
+  font-size: 24px; 
+  font-weight: bold;
+  color: #68dfc1;
+}
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #333;
+  padding: 10px 20px;
+}
+
+.left-section {
+  flex: 1;
+}
+
+.middle-section {
+  flex: 3;
+  display: flex;
+  align-items: center;
+  margin-right: 20px; /* Add margin to create space between search bar and login button */
+}
+
+.search-bar {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-right: 200px;
+  width: 100%; /* Ensure the search bar expands to fill the space */
+}
+
+
+.right-section ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  display: flex; /* Align login and signup links horizontally */
+}
+
+.right-section ul li {
+  margin-left: 20px; /* Add space between login and signup links */
+}
+
+.right-section ul li:first-child {
+  margin-left: 0; /* Remove margin from the first link */
+}
+
+.right-section ul li a {
+  text-decoration: none;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 4px;
+  background-color: #007bff; /* Button background color */
+}
+
+.right-section ul li a:hover {
+  background-color: #0056b3; /* Button background color on hover */
+}
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Adjust column width as needed */
+  gap: 20px; /* Adjust gap between grid items */
+}
+
+.product-item {
+  background-color: #f5f5f5;
+  padding: 20px;
+  border-radius: 5px;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.1); /* Add shadow effect */
+}
+
+.description {
+  font-weight: bold;
+}
+
+.stock {
+  margin-top: 10px;
+}
+
+button {
+  margin-top: 10px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  background-color: #007bff;
+  color: #fff;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
