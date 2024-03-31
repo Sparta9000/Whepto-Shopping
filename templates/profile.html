@@ -94,6 +94,20 @@
               orderId.textContent = `Order ID: ${order[0]}`;
               orderItem.appendChild(orderId);
 
+              const status = document.createElement("p");
+              if (order[1] == 1) {
+                status.textContent = "Status: success";
+                status.style.color = "green";
+              } else if (order[1] == 0) {
+                status.textContent = "Status: failed";
+                status.style.color = "red";
+              } else {
+                status.textContent = "Status: pending";
+                status.style.color = "#FFBF00";
+              }
+
+              orderItem.appendChild(status);
+
               const address = document.createElement("p");
               if (order[9] !== null)
                 address.textContent = `${order[8]}, ${order[9]}, ${order[10]}, ${order[11]}`;
