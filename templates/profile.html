@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Profile - Whepto</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/profile.css') }}"
+    />
+  </head>
+  <body>
+    <div class="navbar">
+      <div class="navbar-left">
+        <a href="/"><h1 class="navbar-brand">Whepto</h1></a>
+      </div>
+      <div class="navbar-right">
+        <a href="/cart"><button class="cart-btn">Cart</button></a>
+        <a href="/logout"><button class="logout-btn">Logout</button></a>
+      </div>
+    </div>
+    <div class="container">
+      <ul id="addressList">
+        <h1>Welcome to your profile</h1>
+        <h2>User Information</h2>
+        <p>Name: <span id="name"></span></p>
+        <h2 class="addressHeader">Addresses</h2>
+        <!-- Addresses will be dynamically added here -->
+      </ul>
+      <button id="addAddressBtn">Add New Address</button>
+      <div id="addAddressForm" style="display: none">
+        <h2>Add New Address</h2>
+        <form id="addressForm">
+          <label for="street1">Street 1:</label>
+          <input type="text" id="street1" name="street1" required /><br />
+          <label for="street2">Street 2 (Optional):</label>
+          <input type="text" id="street2" name="street2" /><br />
+          <label for="city">City:</label>
+          <input type="text" id="city" name="city" required /><br />
+          <label for="state">State:</label>
+          <input type="text" id="state" name="state" required /><br />
+          <label for="phone1">Phone:</label>
+          <input type="text" id="phone1" name="phone1" required /><br />
+          <label for="phone2">Phone 2 (Optional):</label>
+          <input type="text" id="phone2" name="phone2" /><br />
+          <button type="submit">Submit</button>
+        </form>
+      </div>
+      <div id="ordersSection">
+        <h2>Orders</h2>
+        <ul id="orderList">
+          <!-- Orders will be dynamically added here -->
+        </ul>
+      </div>
+    </div>
+
+    <script>
+      const name = document.getElementById("name");
+      fetch("/user")
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error("Failed to fetch user information");
+          }
+          return response.json();
+        })
+        .then((user) => {
+          name.textContent = user.name;
+          load_address().then(() => {
+            loadOrders();
+          });
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+
+      const ordersSection = document.getElementById("ordersSection");
+      const orderList = document.getElementById("orderList");
+
+      function loadOrders() {
+        fetch("/order")
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error("Failed to fetch orders");
+            }
+            return response.json();
+          })
+          .then((orders) => {
+            orders.forEach((order) => {
+              const orderItem = document.createElement("li");
+              orderItem.classList.add("order-item");
+              orderItem.setAttribute("data-order-id", order[0]);
+
+              const orderId = document.createElement("p");
+              orderId.textContent = `Order ID: ${order[0]}`;
+              orderItem.appendChild(orderId);
+
+              const address = document.createElement("p");
+              if (order[9] !== null)
+                address.textContent = `${order[8]}, ${order[9]}, ${order[10]}, ${order[11]}`;
+              else
+                address.textContent = `${order[8]}, ${order[10]}, ${order[11]}`;
+              orderItem.appendChild(address);
+
+              const timestamp = document.createElement("p");
+              timestamp.textContent = `Timestamp: ${order[2]}`;
+              orderItem.appendChild(timestamp);
+
+              const viewDetailsBtn = document.createElement("button");
+              viewDetailsBtn.textContent = "View Details";
+              viewDetailsBtn.addEventListener("click", () => {
+                const target = event.target;
+                fetch(`/order?order=${order[0]}`)
+                  .then((response) => {
+                    if (!response.ok)
+                      throw new Error("Failed to fetch order details");
+                    return response.json();
+                  })
+                  .then((orderDetails) => {
+                    target.remove();
+                    const orderDetailsList = document.createElement("ul");
+                    orderDetailsList.classList.add("order-details-list");
+                    orderDetails.forEach((orderDetail) => {
+                      const itemDetails = document.createElement("li");
+                      itemDetails.textContent = `${orderDetail[6]} - Quantity: ${orderDetail[2]}`;
+
+                      orderDetailsList.appendChild(itemDetails);
+                    });
+                    orderItem.appendChild(orderDetailsList);
+                  });
+              });
+              orderItem.appendChild(viewDetailsBtn);
+
+              orderList.appendChild(orderItem);
+            });
+          })
+          .catch((error) => {
+            console.error(error);
+          });
+      }
+
+      const addAddressBtn = document.getElementById("addAddressBtn");
+      const addAddressForm = document.getElementById("addAddressForm");
+
+      addAddressBtn.addEventListener("click", () => {
+        if (addAddressForm.style.display === "block") {
+          addAddressForm.style.display = "none";
+        } else {
+          addAddressForm.style.display = "block";
+        }
+      });
+
+      document
+        .getElementById("addressForm")
+        .addEventListener("submit", (event) => {
+          event.preventDefault();
+          addAddress();
+        });
+
+      function addAddress() {
+        const addressForm = document.getElementById("addressForm");
+        const formData = new FormData(addressForm);
+        fetch("/address", {
+          method: "POST",
+          body: formData,
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error("Failed to add address");
+            } else {
+              load_address();
+            }
+          })
+          .catch((error) => {
+            console.error(error);
+          });
+
+        addressForm.reset();
+
+        return false;
+      }
+
+      function load_address() {
+        const addressList = document.getElementById("addressList");
+        while (addressList.lastChild.tagName == "LI") {
+          addressList.removeChild(addressList.lastChild);
+        }
+        return fetch("/address")
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error("Failed to fetch address");
+            }
+            return response.json();
+          })
+          .then((addresses) => {
+            addresses.forEach((address) => {
+              const addressItem = document.createElement("li");
+              addressItem.classList.add("address-item");
+              const addressDetails = document.createElement("div");
+              addressDetails.classList.add("address-details");
+
+              if (address[1]) {
+                const street = document.createElement("p");
+                street.textContent = address[1];
+                addressDetails.appendChild(street);
+              }
+
+              if (address[2]) {
+                const street2 = document.createElement("p");
+                street2.textContent = address[2];
+                addressDetails.appendChild(street2);
+              }
+
+              if (address[3]) {
+                const city = document.createElement("p");
+                city.textContent = address[3];
+                addressDetails.appendChild(city);
+              }
+
+              if (address[4]) {
+                const state = document.createElement("p");
+                state.textContent = address[4];
+                addressDetails.appendChild(state);
+              }
+
+              if (address[5]) {
+                const phone = document.createElement("p");
+                phone.textContent = address[5];
+                addressDetails.appendChild(phone);
+              }
+
+              if (address[6]) {
+                const phone2 = document.createElement("p");
+                phone2.textContent = address[6];
+                addressDetails.appendChild(phone2);
+              }
+
+              addressItem.appendChild(addressDetails);
+              const deleteBtn = document.createElement("button");
+              deleteBtn.classList.add("delete-address-btn");
+              deleteBtn.textContent = "Delete";
+              deleteBtn.setAttribute("data-address-id", address[0]);
+
+              deleteBtn.addEventListener("click", () => {
+                addressItem.remove();
+                fetch(`/address?address=${address[0]}`, {
+                  method: "DELETE",
+                })
+                  .then((response) => {
+                    if (!response.ok) {
+                      throw new Error("Failed to delete address");
+                    }
+                    addressItem.remove();
+                  })
+                  .catch((error) => {
+                    console.error(error);
+                  });
+              });
+
+              addressItem.appendChild(deleteBtn);
+
+              addressList.appendChild(addressItem);
+            });
+          })
+          .catch((error) => {
+            console.error(error);
+          });
+      }
+    </script>
+  </body>
+</html>

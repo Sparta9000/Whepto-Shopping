@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Whepto - Items</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+  </head>
+  <body>
+    <div class="navbar">
+      <div class="navbar-left">
+        <h1 class="navbar-brand">Whepto</h1>
+      </div>
+      <div class="navbar-middle">
+        <input type="text" placeholder="Search..." class="search-bar" />
+      </div>
+      <div class="navbar-right">
+        <a href="/cart"><button class="cart-btn">Cart</button></a>
+        <a href="/profile"><button class="profile-btn">Profile</button></a>
+        <a href="/logout"><button class="logout-btn">Logout</button></a>
+      </div>
+    </div>
+    <div class="grid-container">
+      <!-- Items will be dynamically added here -->
+    </div>
+    <script>
+      document
+        .querySelector(".search-bar")
+        .addEventListener("input", (event) => {
+          search(event.target.value);
+        });
+
+      search("");
+
+      function search(term) {
+        const gridContainer = document.querySelector(".grid-container");
+        while (gridContainer.firstChild) {
+          gridContainer.removeChild(gridContainer.firstChild);
+        }
+
+        fetch("/search?search=" + term)
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error("Failed to fetch items");
+            }
+            return response.json();
+          })
+          .then((items) => {
+            items.forEach((item) => {
+              const gridItem = document.createElement("div");
+              gridItem.classList.add("grid-item");
+
+              const heading = document.createElement("h2");
+              heading.textContent = item[3];
+              gridItem.appendChild(heading);
+
+              const stockParagraph = document.createElement("p");
+              stockParagraph.textContent = `Stock: ${item[1]}`;
+              gridItem.appendChild(stockParagraph);
+
+              const priceParagraph = document.createElement("p");
+              priceParagraph.textContent = `Price: $${item[2].toFixed(2)}`;
+              gridItem.appendChild(priceParagraph);
+
+              const quantityLabel = document.createElement("label");
+              quantityLabel.setAttribute("for", `quantity${item[0]}`);
+              quantityLabel.textContent = "Quantity:";
+              gridItem.appendChild(quantityLabel);
+
+              const quantityInput = document.createElement("input");
+              quantityInput.setAttribute("type", "number");
+              quantityInput.setAttribute("id", `quantity${item[0]}`);
+              quantityInput.setAttribute("name", `quantity${item[0]}`);
+              quantityInput.setAttribute("value", "1");
+              quantityInput.setAttribute("min", "1");
+              quantityInput.setAttribute("max", item[1]);
+              gridItem.appendChild(quantityInput);
+
+              const addToCartButton = document.createElement("button");
+              addToCartButton.setAttribute("data-item-id", item[0]);
+              if (item[6] != null) {
+                addToCartButton.classList.add("update-cart-btn");
+                addToCartButton.textContent = "Update Cart";
+              } else {
+                addToCartButton.classList.add("add-to-cart-btn");
+                addToCartButton.textContent = "Add to Cart";
+              }
+              gridItem.appendChild(addToCartButton);
+
+              gridContainer.appendChild(gridItem);
+            });
+
+            document.querySelectorAll(".add-to-cart-btn").forEach((button) => {
+              button.addEventListener("click", addToCart);
+            });
+            document.querySelectorAll(".update-cart-btn").forEach((button) => {
+              button.addEventListener("click", updateCart);
+            });
+          })
+          .catch((error) => {
+            console.error("Error fetching items:", error);
+          });
+      }
+
+      function addToCart(event) {
+        const itemId = parseInt(event.target.dataset.itemId);
+        const quantityInput = document.querySelector(`#quantity${itemId}`);
+        const quantity = parseInt(quantityInput.value);
+        fetch("/cart/add", {
+          method: "POST",
+          mode: "cors",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            item: itemId,
+            quantity: quantity,
+          }),
+        })
+          .then((response) => {
+            if (!response.ok) {
+              alert("Failed to add item to cart. Please try again.");
+            }
+            else {
+              search("");
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            alert(
+              "An error occurred while adding item to cart. Please try again later."
+            );
+          });
+      }
+
+      function updateCart(event) {
+        const itemId = parseInt(event.target.dataset.itemId);
+        const quantityInput = document.querySelector(`#quantity${itemId}`);
+        const quantity = parseInt(quantityInput.value);
+        fetch("/cart/update", {
+          method: "POST",
+          mode: "cors",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            item: itemId,
+            quantity: quantity,
+          }),
+        })
+          .then((response) => {
+            if (!response.ok) {
+              alert("Failed to add item to cart. Please try again.");
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            alert(
+              "An error occurred while adding item to cart. Please try again later."
+            );
+          });
+      }
+    </script>
+  </body>
+</html>

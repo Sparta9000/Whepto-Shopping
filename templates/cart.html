@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cart</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/cart.css') }}"
+    />
+  </head>
+  <body>
+    <div class="navbar">
+      <div class="navbar-left">
+        <a href="/"><h1 class="navbar-brand">Whepto</h1></a>
+      </div>
+      <div class="navbar-right">
+        <a href="/profile"><button class="profile-btn">Profile</button></a>
+        <a href="/logout"><button class="logout-btn">Logout</button></a>
+      </div>
+    </div>
+    <div class="cart-container">
+      <h1>Shopping Cart</h1>
+      <table id="cart-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Quantity</th>
+            <th>Price</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="cart-items">
+          <!-- Cart items will be dynamically added here -->
+        </tbody>
+      </table>
+      <div class="total">
+        <p>Total: <span id="total-cost">$0.00</span></p>
+      </div>
+      <div id="couponForm">
+        <label for="couponCode">Coupon Code:</label>
+        <input type="text" id="couponCode" />
+        <button id="applyCouponBtn">Apply</button>
+      </div>
+      <br />
+      <div class="address">
+        <label for="address"><strong>Select Address:</strong></label>
+        <div id="address-list">
+          <!-- Address options will be dynamically added here -->
+        </div>
+      </div>
+      <button id="place-order-btn">Place Order</button>
+    </div>
+    <script>
+      let couponId = null;
+      document.addEventListener("DOMContentLoaded", function () {
+        fetchCartItems().then((dunder) => {
+          fetchAddresses();
+        });
+        document
+          .getElementById("place-order-btn")
+          .addEventListener("click", placeOrder);
+      });
+
+      document
+        .getElementById("applyCouponBtn")
+        .addEventListener("click", () => {
+          const couponCode = document.getElementById("couponCode").value;
+          fetch(`/coupon?code=${couponCode}`)
+            .then((response) => {
+              if (response.ok) {
+                return response.json();
+              } else {
+                throw new Error("Failed to apply coupon");
+              }
+            })
+            .then((data) => {
+              couponId = data[0][0];
+              alert("Coupon applied successfully!");
+            })
+            .catch((error) => {
+              console.error("Error applying coupon:", error);
+              alert("Failed to apply coupon. Please try again.");
+              couponId = null;
+            });
+        });
+
+      function fetchCartItems() {
+        return fetch("/cart/items")
+          .then((response) => response.json())
+          .then((data) => {
+            const cartItemsContainer = document.getElementById("cart-items");
+            cartItemsContainer.innerHTML = "";
+            let totalCost = 0;
+
+            data.forEach((item) => {
+              const itemCost = item[2] * item[5];
+              totalCost += itemCost;
+
+              const row = document.createElement("tr");
+              row.innerHTML = `
+                    <td>${item[6]}</td>
+                    <td>${item[2]}</td>
+                    <td>$${itemCost.toFixed(2)}</td>
+                    <td>
+                        <button class="remove-btn" item-id=${
+                          item[1]
+                        }>Remove</button>
+                        <br />
+                        <input type="number" class="quantity-input" item-id=${
+                          item[1]
+                        } value=${item[2]} min="1" max=${item[5]}>
+                        <button class="update-btn" item-id=${
+                          item[1]
+                        }>Update</button>
+                    </td>
+                `;
+              cartItemsContainer.appendChild(row);
+            });
+
+            document.querySelectorAll(".remove-btn").forEach((button) => {
+              button.addEventListener("click", (event) => {
+                const itemId = event.target.getAttribute("item-id");
+                fetch(`/cart  ?item=${itemId}`, {
+                  method: "DELETE",
+                })
+                  .then((response) => {
+                    if (response.ok) {
+                      fetchCartItems();
+                    } else {
+                      alert(
+                        "Failed to remove item from cart. Please try again."
+                      );
+                    }
+                  })
+                  .catch((error) =>
+                    console.error("Error removing item from cart:", error)
+                  );
+              });
+            });
+
+            document.querySelectorAll(".update-btn").forEach((button) => {
+              button.addEventListener("click", (event) => {
+                const itemId = event.target.getAttribute("item-id");
+                const quantityInput = document.querySelector(
+                  `.quantity-input[item-id="${itemId}"]`
+                );
+                const quantity = parseInt(quantityInput.value);
+                fetch("/cart/update", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({ item: itemId, quantity: quantity }),
+                })
+                  .then((response) => {
+                    if (response.ok) {
+                      fetchCartItems();
+                    } else {
+                      alert(
+                        "Failed to update item quantity. Please try again."
+                      );
+                    }
+                  })
+                  .catch((error) =>
+                    console.error("Error updating item quantity:", error)
+                  );
+              });
+            });
+
+            document.getElementById(
+              "total-cost"
+            ).textContent = `$${totalCost.toFixed(2)}`;
+          })
+          .catch((error) => console.error("Error fetching cart items:", error));
+      }
+
+      function fetchAddresses() {
+        fetch("/address")
+          .then((response) => response.json())
+          .then((data) => {
+            const addressList = document.getElementById("address-list");
+            data.forEach((address) => {
+              const addressRadio = document.createElement("input");
+              addressRadio.type = "radio";
+              addressRadio.name = "address";
+              addressRadio.value = address[0];
+              addressRadio.id = `address-${address[0]}`;
+
+              const label = document.createElement("label");
+              label.htmlFor = `address-${address[0]}`;
+              if (address[2] !== null)
+                label.textContent = `${address[1]}, ${address[2]}, ${address[3]}, ${address[4]}`;
+              else
+                label.textContent = `${address[1]}, ${address[3]}, ${address[4]}`;
+
+              addressList.appendChild(addressRadio);
+              addressList.appendChild(label);
+              addressList.appendChild(document.createElement("br"));
+            });
+          })
+          .catch((error) => console.error("Error fetching addresses:", error));
+      }
+
+      function placeOrder() {
+        const selectedAddress = document.querySelector(
+          'input[name="address"]:checked'
+        );
+        if (!selectedAddress) {
+          alert("Please select an address to place the order.");
+          return;
+        }
+
+        addressId = selectedAddress.value;
+
+        fetch("/order", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ address: addressId, coupon: couponId }),
+        })
+          .then((response) => {
+            if (response.ok) {
+              alert("Order In progress!");
+              return response.json();
+            } else {
+              alert("Failed to place order. Please try again.");
+              throw new Error("Failed to place order");
+            }
+          })
+          .then((data) => {
+            const confirmation = confirm("Simulate transaction as completed?");
+            console.log(data);
+            const id = data[0];
+
+            let status = 0;
+
+            if (confirmation) status = 1;
+
+            fetch("/order/complete", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ transaction: id, complete: status }),
+            })
+              .then((response) => {
+                if (response.ok) {
+                  alert("Order status updated successfully");
+                } else {
+                  alert("Transaction cancelled");
+                }
+                window.location.href = "/";
+              })
+              .catch((error) => {
+                console.error("Error updating order status:", error);
+                alert(
+                  "An error occurred while updating order status. Please try again later."
+                );
+              });
+          })
+          .catch((error) => {
+            console.error("Error placing order:", error);
+            alert(
+              "An error occurred while placing the order. Please try again later."
+            );
+          });
+      }
+    </script>
+  </body>
+</html>
