@@ -1,0 +1,24 @@
+1) Create a trigger for making a new cart and adding to the customer
+
+CREATE DEFINER=`root`@`localhost` TRIGGER `customer_BEFORE_INSERT` BEFORE INSERT ON `customer` FOR EACH ROW BEGIN
+	DECLARE new_cart_id INT;
+    INSERT INTO cart () VALUES ();
+    SET new_cart_id = LAST_INSERT_ID();
+    set NEW.cart = new_cart_id;
+END
+
+
+2) Create a trigger for resetting the cart and saving the last one
+
+CREATE DEFINER = CURRENT_USER TRIGGER `whepto`.`transaction_AFTER_INSERT` AFTER INSERT ON `transaction` FOR EACH ROW
+BEGIN
+	DECLARE new_cart_id INT;
+    INSERT INTO cart () VALUES ();
+    SET new_cart_id = LAST_INSERT_ID();
+    UPDATE customer
+		SET cart = new_cart_id
+		WHERE customer_id = NEW.customer_id;
+END
+
+
+The project can be viewed at https://github.com/Sparta9000/Whepto-Shopping/tree/main

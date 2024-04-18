@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Whepto - Items</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+  </head>
+  <body>
+    <div class="navbar">
+      <div class="navbar-left">
+        <h1 class="navbar-brand">Whepto</h1>
+      </div>
+      <div class="navbar-middle">
+        <input type="text" placeholder="Search..." class="search-bar" />
+      </div>
+    </div>
+    <div class="grid-container">
+      <!-- Items will be dynamically added here -->
+    </div>
+    <script>
+      document
+        .querySelector(".search-bar")
+        .addEventListener("input", (event) => {
+          search(event.target.value);
+        });
+
+      search("");
+
+      function search(term) {
+        const gridContainer = document.querySelector(".grid-container");
+        while (gridContainer.firstChild) {
+          gridContainer.removeChild(gridContainer.firstChild);
+        }
+
+        fetch("/product?product=" + term)
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error("Failed to fetch items");
+            }
+            return response.json();
+          })
+          .then((items) => {
+            items.forEach((item) => {
+              const gridItem = document.createElement("div");
+              gridItem.classList.add("grid-item");
+
+              const heading = document.createElement("h2");
+              heading.textContent = item[3];
+              gridItem.appendChild(heading);
+
+              const stockParagraph = document.createElement("p");
+              stockParagraph.textContent = `Stock: ${item[1]}`;
+              gridItem.appendChild(stockParagraph);
+
+              const priceParagraph = document.createElement("p");
+              priceParagraph.textContent = `Price: $${item[2].toFixed(2)}`;
+              gridItem.appendChild(priceParagraph);
+
+              const quantityLabel = document.createElement("label");
+              quantityLabel.setAttribute("for", `quantity${item[0]}`);
+              quantityLabel.textContent = "Quantity:";
+              gridItem.appendChild(quantityLabel);
+
+              const quantityInput = document.createElement("input");
+              quantityInput.setAttribute("type", "number");
+              quantityInput.setAttribute("id", `quantity${item[0]}`);
+              quantityInput.setAttribute("name", `quantity${item[0]}`);
+              quantityInput.setAttribute("value", "1");
+              quantityInput.setAttribute("min", "1");
+              quantityInput.setAttribute("max", item[1]);
+              gridItem.appendChild(quantityInput);
+
+              const br = document.createElement("br");
+              gridItem.appendChild(br);
+
+              const addToCartButton = document.createElement("button");
+              addToCartButton.setAttribute("data-item-id", item[0]);
+              addToCartButton.classList.add("update-cart-btn");
+              addToCartButton.textContent = "Update Stock";
+              gridItem.appendChild(addToCartButton);
+
+              const deleteButton = document.createElement("button");
+              deleteButton.setAttribute("data-item-id", item[0]);
+              deleteButton.classList.add("add-to-cart-btn");
+              deleteButton.textContent = "Delete Item";
+              gridItem.appendChild(deleteButton);
+
+              gridContainer.appendChild(gridItem);
+            });
+
+            const gridItem = document.createElement("div");
+            gridItem.classList.add("grid-item");
+
+            const heading = document.createElement("input");
+            heading.setAttribute("type", "text");
+            heading.setAttribute("placeholder", "name")
+            heading.setAttribute("id", "newName");
+            gridItem.appendChild(heading);
+
+            const stockParagraph = document.createElement("input");
+            stockParagraph.setAttribute("type", "number");
+            stockParagraph.setAttribute("placeholder", "stock")
+            stockParagraph.setAttribute("id", "newStock");
+            gridItem.appendChild(stockParagraph);
+
+            const priceParagraph = document.createElement("input");
+            priceParagraph.setAttribute("type", "number");
+            priceParagraph.setAttribute("placeholder", "price")
+            priceParagraph.setAttribute("id", "newPrice");
+            gridItem.appendChild(priceParagraph);
+
+            const addItemButton = document.createElement("button");
+            addItemButton.classList.add("add-item-btn");
+            addItemButton.textContent = "Add Item";
+            gridItem.appendChild(addItemButton);
+
+            gridContainer.appendChild(gridItem);
+
+            document.querySelectorAll(".add-to-cart-btn").forEach((button) => {
+              button.addEventListener("click", deleteItem);
+            });
+
+            document.querySelectorAll(".update-cart-btn").forEach((button) => {
+              button.addEventListener("click", updateCart);
+            });
+
+            document.querySelector(".add-item-btn").addEventListener("click", addItem);
+          })
+          .catch((error) => {
+            console.error("Error fetching items:", error);
+          });
+      }
+
+      function deleteItem(event) {
+        const itemId = parseInt(event.target.dataset.itemId);
+        fetch("/product/delete", {
+          method: "POST",
+          mode: "cors",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            product: itemId,
+          }),
+        })
+          .then((response) => {
+            if (!response.ok) {
+              alert("Failed to delete item. Please try again.");
+            }
+            else {
+                search("");
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            alert(
+              "An error occurred while deleting item. Please try again later."
+            );
+          });
+      }
+
+      function addItem(even) {
+        const name = document.querySelector("#newName").value;
+        const stock = document.querySelector("#newStock").value;
+        const price = document.querySelector("#newPrice").value;
+        fetch("/product/add", {
+          method: "POST",
+          mode: "cors",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: name,
+            stock: stock,
+            price: price,
+          }),
+        })
+          .then((response) => {
+            if (!response.ok) {
+              alert("Failed to add item. Please try again.");
+            }
+            else {
+                search("");
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            alert(
+              "An error occurred while adding item. Please try again later."
+            );
+          });
+      }
+
+      function updateCart(event) {
+        const itemId = parseInt(event.target.dataset.itemId);
+        const quantityInput = document.querySelector(`#quantity${itemId}`);
+        const quantity = parseInt(quantityInput.value);
+        fetch("/product/stock", {
+          method: "POST",
+          mode: "cors",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            product: itemId,
+            stock: quantity,
+          }),
+        })
+          .then((response) => {
+            if (!response.ok) {
+              alert("Failed to add item to cart. Please try again.");
+            } else {
+              search("");
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            alert(
+              "An error occurred while adding item to cart. Please try again later."
+            );
+          });
+      }
+    </script>
+  </body>
+</html>

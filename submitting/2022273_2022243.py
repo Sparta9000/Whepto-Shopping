@@ -32,60 +32,6 @@ def search():
         products = cur.fetchall()
     return products
 
-@app.route('/product', methods = ['GET'])
-def product():
-    product = request.args.get('product')
-    with con.cursor() as cur:
-        if product == None or product == '':
-            cur.execute('SELECT * FROM item')
-        else:
-            cur.execute('SELECT * FROM item WHERE item.description LIKE "%{}%"'.format(product))
-
-        products = cur.fetchall()
-
-    return products
-
-@app.route('/product/delete', methods = ['POST'])
-def product_post():
-    product = request.get_json().get('product')
-
-    with con.cursor() as cur:
-        cur.execute('SELECT * FROM cart_items WHERE item = {}'.format(product))
-
-        if cur.fetchone():
-            return make_response('Product is in cart', 400)
-
-    with con.cursor() as cur:
-        cur.execute('DELETE FROM item WHERE item_id = {}'.format(product))
-    con.commit()
-    return 'Product deleted'
-
-@app.route('/product/stock', methods = ['POST'])
-def product_stock():
-    product = request.get_json().get('product')
-    stock = request.get_json().get('stock')
-
-    with con.cursor() as cur:
-        cur.execute('UPDATE item SET stock = {} WHERE item_id = {}'.format(stock, product))
-    con.commit()
-    return 'Stock updated'
-
-@app.route('/product/add', methods = ['POST'])
-def product_add():
-    name = request.get_json().get('name')
-    price = request.get_json().get('price')
-    stock = request.get_json().get('stock')
-
-    with con.cursor() as cur:
-        cur.execute('INSERT INTO item (stock, price, description, category) VALUES ({}, {}, "{}", 1)'.format(stock, price, name))
-    con.commit()
-    return 'Product added'
-
-
-@app.route('/admin')
-def admin():
-    return render_template('admin.html')
-
 @app.route('/profile')
 def profile():
     return render_template('profile.html')
