@@ -200,8 +200,23 @@ def order():
 def order_complete():
     transaction_id = request.json.get('transaction')
     complete = request.json.get('complete')
+
+    if complete == 1:
+        with con.cursor() as cur:
+            cur.execute('SELECT item_id, stock, quantity FROM item JOIN cart_items ON item.item_id=cart_items.item WHERE cart = (SELECT cart_id FROM transaction WHERE transaction_id = {})'.format(transaction_id))
+            items = cur.fetchall()
+
+        for item in items:
+            if (item[1] < item[2]):
+                return 'Stock not available', 400
+        
+        if complete == 1:
+            with con.cursor() as cur:
+                cur.execute('UPDATE item SET stock = stock - (SELECT quantity FROM cart_items WHERE item = item_id AND cart = (SELECT cart_id FROM transaction WHERE transaction_id={})) WHERE item_id IN (SELECT item FROM cart_items WHERE cart = (SELECT cart_id FROM transaction WHERE transaction_id={}))'.format(transaction_id, transaction_id))
+
     with con.cursor() as cur:
         cur.execute('UPDATE transaction SET status = {} WHERE transaction_id = {}'.format(complete, transaction_id))
+    
     con.commit()
     return 'updated'
 

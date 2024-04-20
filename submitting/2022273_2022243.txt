@@ -1,24 +1,30 @@
-1) Create a trigger for making a new cart and adding to the customer
+Non conflicting Transactions:
 
-CREATE DEFINER=`root`@`localhost` TRIGGER `customer_BEFORE_INSERT` BEFORE INSERT ON `customer` FOR EACH ROW BEGIN
-	DECLARE new_cart_id INT;
-    INSERT INTO cart () VALUES ();
-    SET new_cart_id = LAST_INSERT_ID();
-    set NEW.cart = new_cart_id;
-END
+START TRANSACTION;
+SELECT * FROM CUSTOMER WHERE customer_id = 5;
+COMMIT;
 
+START TRANSACTION;
+SELECT * FROM CUSTOMER WHERE customer_id = 10;
+COMMIT;
 
-2) Create a trigger for resetting the cart and saving the last one
+START TRANSACTION;
+UPDATE item SET price = price + 5 WHERE item_id = 5;
+COMMIT;
 
-CREATE DEFINER = CURRENT_USER TRIGGER `whepto`.`transaction_AFTER_INSERT` AFTER INSERT ON `transaction` FOR EACH ROW
-BEGIN
-	DECLARE new_cart_id INT;
-    INSERT INTO cart () VALUES ();
-    SET new_cart_id = LAST_INSERT_ID();
-    UPDATE customer
-		SET cart = new_cart_id
-		WHERE customer_id = NEW.customer_id;
-END
+START TRANSACTION;
+SELECT * FROM category;
+UPDATE customer SET password = "12345" WHERE customer_id=10;
+COMMIT;
 
+Conflicting Transactions:
 
-The project can be viewed at https://github.com/Sparta9000/Whepto-Shopping/tree/main
+START TRANSACTION;
+UPDATE item SET stock = stock + 5 WHERE item_id = 10;
+COMMIT;
+
+START TRANSACTION;
+UPDATE item SET stock = stock - 5 WHERE item_id = 10;
+COMMIT;
+
+These must be interleved
